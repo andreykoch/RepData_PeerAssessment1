@@ -9,13 +9,13 @@ output:
 ## Loading and preprocessing the data
 
 Preparing the environment for futher R Markdown file processing:
-```{r setoptions, echo=TRUE}
+```{r setoptions, echo=TRUE, warning=FALSE}
 require(knitr)
 opts_chunk$set(echo = TRUE, cache = TRUE, cache.path = "cache/", fig.path = "figure/")
 ```
 
 First, load necessary packages
-```{r load_packages}
+```{r load_packages, echo=TRUE, warning=FALSE}
 library(data.table)
 library(reshape2)
 library(plyr)
@@ -23,7 +23,7 @@ library(lattice)
 ```
 
 Read the data into data frame
-```{r readdata,echo=TRUE}
+```{r readdata, echo=TRUE}
 df <- read.csv('activity.csv')
 ```
 
@@ -32,18 +32,15 @@ df <- read.csv('activity.csv')
 
 Calculate the total number of steps taken per day
 ```{r totalsteps, echo=TRUE}
-#nsday <- aggregate(df, by=list(df$date), FUN=length, na.rm=TRUE)
 nsday <- ddply(df, "date", summarise,
                N.steps = sum(steps, na.rm=TRUE) 
                )
-#               mean = mean(steps, na.rm=TRUE),
-#               sd   = sd(steps, na.rm=TRUE),
-#               se   = sd / sqrt(N)
+ndays <- dim(nsday)[1]
 print(head(nsday,5))
 print(tail(nsday,5))
 ```
 
-If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+Make a histogram of the total number of steps taken each day
 ```{r histogram, fig.height=5, fig.width=6, echo=TRUE}
 par(mar = c(5, 4, 1, 1), las = 1)
 hist(nsday$N.steps,
@@ -78,6 +75,7 @@ First, compute the average number of steps taken at each 5-min interval
 nsint <- ddply(df, "interval", summarise,
                N.steps = mean(steps, na.rm = TRUE)
                )
+nint <- dim(nsint)[1]
 print(head(nsint,5))
 print(tail(nsint,5))
 ```
@@ -101,7 +99,7 @@ imax <- nsint$N.steps==stepmax
 intmax <- nsint$interval[imax]
 ```
 
-The **`r intmax`th** interval contains the maximum number of steps (**`r round(stepmax)`**)
+The interval **`r intmax`**  contains the maximum number of steps (**`r round(stepmax)`**)
 
 ## Imputing missing values
 
@@ -113,14 +111,14 @@ N.NAs.d <- sum(as.numeric(is.na(df$date)))
 print(c(N.NAs.s, N.NAs.i, N.NAs.d))
 ```
 
-The total number of missing values in the dataset is **`r N.NAs.s`** that comprise **`r N.NAs.s/288`** days
+The total number of missing values in the dataset is **`r N.NAs.s`** that comprise **`r N.NAs.s/nint`** days
 
-Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+Let's use the mean for each 5-minute interva to fill the gaps
 
-Create a new dataset that is equal to the original dataset but with the missing data filled in.
+Create a new dataset that is equal to the original dataset but with the missing data filled in
 ```{r replaceNAs, echo=TRUE}
 df.mod <- df
-nsint.long <- rep(nsint$N.steps, 61)
+nsint.long <- rep(nsint$N.steps, ndays)
 df.mod$steps[is.na(df$steps)] <- nsint.long[is.na(df$steps)]
 print(summary(df.mod))
 print(summary(df))
@@ -156,19 +154,17 @@ Calculate and report the mean and median of the total number of steps taken per 
 ```{r mean&median.mod, echo=TRUE}
 nsday.mea <- mean(nsday.mod$N.steps)
 nsday.med <- median(nsday.mod$N.steps)
-print(round(nsday.mea))
-print(round(nsday.med))
 ```
 
-The **mean** of the total number of steps taken per day is **`r round(nsday.mea)`**
+The **mean** of the total number of steps taken per day is **`r as.integer(nsday.mea)`**
 
-The **median** of the total number of steps taken per day is **`r round(nsday.med)`**
+The **median** of the total number of steps taken per day is **`r as.integer(nsday.med)`**
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
 Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
-```{r parseweekdays}
+```{r parseweekdays, echo=TRUE}
 weekday7 <- weekdays(as.Date(df.mod$date))
 weekday2 <- rep("weekday", 17568)
 weekday2[weekday7 == "Saturday" | weekday7 == "Sunday"] <- "weekend"
@@ -191,7 +187,7 @@ print(head(nsintwd,5))
 print(tail(nsintwd,5))
 ```
 
-Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
 ```{r plotweeknd, echo=TRUE}
 nsintwd.molten <- melt(nsintwd, id.vars=c("interval"))
 xyplot(

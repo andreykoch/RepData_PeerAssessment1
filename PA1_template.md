@@ -13,10 +13,6 @@ require(knitr)
 ## Loading required package: knitr
 ```
 
-```
-## Warning: package 'knitr' was built under R version 3.1.3
-```
-
 ```r
 opts_chunk$set(echo = TRUE, cache = TRUE, cache.path = "cache/", fig.path = "figure/")
 ```
@@ -25,21 +21,7 @@ First, load necessary packages
 
 ```r
 library(data.table)
-```
-
-```
-## Warning: package 'data.table' was built under R version 3.1.3
-```
-
-```r
 library(reshape2)
-```
-
-```
-## Warning: package 'reshape2' was built under R version 3.1.3
-```
-
-```r
 library(plyr)
 library(lattice)
 ```
@@ -56,13 +38,10 @@ df <- read.csv('activity.csv')
 Calculate the total number of steps taken per day
 
 ```r
-#nsday <- aggregate(df, by=list(df$date), FUN=length, na.rm=TRUE)
 nsday <- ddply(df, "date", summarise,
                N.steps = sum(steps, na.rm=TRUE) 
                )
-#               mean = mean(steps, na.rm=TRUE),
-#               sd   = sd(steps, na.rm=TRUE),
-#               se   = sd / sqrt(N)
+ndays <- dim(nsday)[1]
 print(head(nsday,5))
 ```
 
@@ -88,7 +67,7 @@ print(tail(nsday,5))
 ## 61 2012-11-30       0
 ```
 
-If you do not understand the difference between a histogram and a barplot, research the difference between them. Make a histogram of the total number of steps taken each day
+Make a histogram of the total number of steps taken each day
 
 ```r
 par(mar = c(5, 4, 1, 1), las = 1)
@@ -128,6 +107,7 @@ First, compute the average number of steps taken at each 5-min interval
 nsint <- ddply(df, "interval", summarise,
                N.steps = mean(steps, na.rm = TRUE)
                )
+nint <- dim(nsint)[1]
 print(head(nsint,5))
 ```
 
@@ -176,7 +156,7 @@ imax <- nsint$N.steps==stepmax
 intmax <- nsint$interval[imax]
 ```
 
-The **835th** interval contains the maximum number of steps (**206**)
+The interval **835**  contains the maximum number of steps (**206**)
 
 ## Imputing missing values
 
@@ -195,13 +175,13 @@ print(c(N.NAs.s, N.NAs.i, N.NAs.d))
 
 The total number of missing values in the dataset is **2304** that comprise **8** days
 
-Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+Let's use the mean for each 5-minute interva to fill the gaps
 
-Create a new dataset that is equal to the original dataset but with the missing data filled in.
+Create a new dataset that is equal to the original dataset but with the missing data filled in
 
 ```r
 df.mod <- df
-nsint.long <- rep(nsint$N.steps, 61)
+nsint.long <- rep(nsint$N.steps, ndays)
 df.mod$steps[is.na(df$steps)] <- nsint.long[is.na(df$steps)]
 print(summary(df.mod))
 ```
@@ -288,24 +268,11 @@ Calculate and report the mean and median of the total number of steps taken per 
 ```r
 nsday.mea <- mean(nsday.mod$N.steps)
 nsday.med <- median(nsday.mod$N.steps)
-print(round(nsday.mea))
 ```
 
-```
-## [1] 10766
-```
+The **mean** of the total number of steps taken per day is **10766**
 
-```r
-print(round(nsday.med))
-```
-
-```
-## [1] 10766
-```
-
-The **mean** of the total number of steps taken per day is **1.0766\times 10^{4}**
-
-The **median** of the total number of steps taken per day is **1.0766\times 10^{4}**
+The **median** of the total number of steps taken per day is **10766**
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
@@ -357,7 +324,7 @@ print(tail(nsintwd,5))
 ## 288     2355 1.4100629  0.13443396
 ```
 
-Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).
+Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis)
 
 ```r
 nsintwd.molten <- melt(nsintwd, id.vars=c("interval"))
