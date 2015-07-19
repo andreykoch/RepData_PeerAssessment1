@@ -1,0 +1,6 @@
+base
+knitr
+data.table
+reshape2
+plyr
+lattice
